@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package aegis;
+
+option go_package = "github.com/zoobz-io/aegis";
+
+// MeshAuth provides service-level authentication on the mesh.
+// Every node runs this service. Callers connect over mTLS,
+// present a SignedAssertion proving private key possession,
+// and receive a short-lived SignedToken for subsequent RPC calls.
+service MeshAuth {
+  // ExchangeToken exchanges a signed assertion for a service token.
+  // The caller's certificate is extracted from the mTLS context.
+  rpc ExchangeToken(TokenExchangeRequest) returns (TokenExchangeResponse);
+
+  // RevokeToken revokes a token by certificate fingerprint.
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+}
+
+// TokenExchangeRequest contains the serialized signed assertion.
+message TokenExchangeRequest {
+  bytes assertion = 1;  // JSON-encoded sctx.SignedAssertion
+}
+
+// TokenExchangeResponse contains the issued token and expiration.
+message TokenExchangeResponse {
+  string token = 1;     // sctx.SignedToken
+  int64 expires_at = 2; // Unix timestamp
+}
+
+// RevokeTokenRequest identifies the token to revoke by certificate fingerprint.
+message RevokeTokenRequest {
+  string fingerprint = 1;
+}
+
+// RevokeTokenResponse is empty on success; errors use gRPC status.
+message RevokeTokenResponse {}

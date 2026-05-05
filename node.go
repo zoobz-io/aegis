@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"github.com/zoobz-io/sctx"
 )
 
 // NodeType represents the type of node in the mesh.
@@ -28,6 +30,9 @@ type Node struct {
 	MeshServer  *MeshServer  `json:"-"`
 	Topology    *Topology    `json:"-"`
 	TLSConfig   *TLSConfig   `json:"-"`
+	Admin       sctx.Admin[Metadata]  `json:"-"`
+	Guards      *GuardRegistry        `json:"-"`
+	nodeToken   sctx.SignedToken
 }
 
 // NewNode creates a new mesh node.
@@ -302,6 +307,14 @@ func (n *Node) SyncTopologyWithAllPeers(ctx context.Context) error {
 	}
 
 	return lastErr
+}
+
+// Guard registers a guard for a gRPC method on this node.
+func (n *Node) Guard(method string, guard sctx.Guard) {
+	if n.Guards == nil {
+		n.Guards = NewGuardRegistry()
+	}
+	n.Guards.Register(method, guard)
 }
 
 // Shutdown gracefully shuts down the node.
