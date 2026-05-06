@@ -2,10 +2,15 @@ package aegis
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
+	"github.com/zoobz-io/sctx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -59,7 +64,20 @@ func (p *ServiceClientPool) getOrCreateConn(ctx context.Context, address string)
 	}
 
 	creds := credentials.NewTLS(p.node.TLSConfig.GetClientTLSConfig(address))
-	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(creds))
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
+
+	// If the node has auth, exchange a token with the target and attach to outgoing calls
+	if p.node.Admin != nil && p.node.TLSConfig != nil {
+		tokenCreds, err := p.exchangeToken(ctx, address, creds)
+		if err != nil {
+			return nil, fmt.Errorf("token exchange with %s failed: %w", address, err)
+		}
+		if tokenCreds != nil {
+			opts = append(opts, grpc.WithPerRPCCredentials(tokenCreds))
+		}
+	}
+
+	conn, err := grpc.NewClient(address, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -153,4 +171,60 @@ func (sc *ServiceClient[T]) Get(ctx context.Context) (T, error) {
 		return zero, err
 	}
 	return sc.newClient(conn), nil
+}
+
+// exchangeToken creates a temporary connection to the target, calls MeshAuth.ExchangeToken,
+// and returns PerRPCCredentials that attach the token to outgoing calls.
+func (p *ServiceClientPool) exchangeToken(ctx context.Context, address string, transportCreds credentials.TransportCredentials) (*tokenCredentials, error) {
+	// Create a temporary connection for the token exchange
+	tmpConn, err := grpc.NewClient(address, grpc.WithTransportCredentials(transportCreds))
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect for token exchange: %w", err)
+	}
+	defer tmpConn.Close()
+
+	// Get the node's TLS cert and private key for the assertion
+	cert, err := x509.ParseCertificate(p.node.TLSConfig.Certificate.Certificate[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse node certificate: %w", err)
+	}
+
+	assertion, err := sctx.CreateAssertion(p.node.TLSConfig.Certificate.PrivateKey, cert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create assertion: %w", err)
+	}
+
+	assertionBytes, err := json.Marshal(assertion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal assertion: %w", err)
+	}
+
+	client := NewMeshAuthClient(tmpConn)
+	resp, err := client.ExchangeToken(ctx, &TokenExchangeRequest{Assertion: assertionBytes})
+	if err != nil {
+		return nil, fmt.Errorf("token exchange RPC failed: %w", err)
+	}
+
+	return &tokenCredentials{
+		token:     resp.Token,
+		expiresAt: time.Unix(resp.ExpiresAt, 0),
+	}, nil
+}
+
+// tokenCredentials implements grpc.PerRPCCredentials to attach the aegis token
+// to outgoing gRPC metadata on every call.
+type tokenCredentials struct {
+	token     string
+	expiresAt time.Time
+}
+
+func (tc *tokenCredentials) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
+	if time.Now().After(tc.expiresAt) {
+		return nil, errors.New("aegis token expired")
+	}
+	return map[string]string{tokenMetadataKey: tc.token}, nil
+}
+
+func (tc *tokenCredentials) RequireTransportSecurity() bool {
+	return true
 }
