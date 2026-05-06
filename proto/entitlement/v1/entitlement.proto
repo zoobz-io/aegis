@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package entitlement.v1;
+
+option go_package = "github.com/zoobz-io/aegis/proto/entitlement/v1";
+
+// EntitlementService provides per-application user management.
+// Implemented by janus, consumed by services managing their own users' roles and scopes.
+// The calling application is identified by its cert CN. Every write RPC includes
+// acting_user_id so janus can verify the actor has admin/owner role in the tenant.
+service EntitlementService {
+  // AuthorizeApplication grants a tenant access to the calling application.
+  rpc AuthorizeApplication(AuthorizeApplicationRequest) returns (AuthorizeApplicationResponse);
+
+  // RevokeApplication revokes a tenant's access to the calling application.
+  rpc RevokeApplication(RevokeApplicationRequest) returns (RevokeApplicationResponse);
+
+  // ListTenantApplications lists applications authorized for a tenant.
+  rpc ListTenantApplications(ListTenantApplicationsRequest) returns (ListTenantApplicationsResponse);
+
+  // GrantUserAccess grants a user access to the calling application with roles and scopes.
+  rpc GrantUserAccess(GrantUserAccessRequest) returns (GrantUserAccessResponse);
+
+  // RevokeUserAccess revokes a user's access to the calling application.
+  rpc RevokeUserAccess(RevokeUserAccessRequest) returns (RevokeUserAccessResponse);
+
+  // UpdateUserAccess updates a user's roles and scopes for the calling application.
+  rpc UpdateUserAccess(UpdateUserAccessRequest) returns (UpdateUserAccessResponse);
+
+  // ListUserAccess lists users with access to the calling application in a tenant.
+  rpc ListUserAccess(ListUserAccessRequest) returns (ListUserAccessResponse);
+}
+
+// AuthorizeApplicationRequest grants a tenant access to the calling application.
+message AuthorizeApplicationRequest {
+  string tenant_id = 1;
+  string acting_user_id = 2;
+}
+
+// AuthorizeApplicationResponse is empty on success; errors use gRPC status.
+message AuthorizeApplicationResponse {}
+
+// RevokeApplicationRequest revokes a tenant's access to the calling application.
+message RevokeApplicationRequest {
+  string tenant_id = 1;
+  string acting_user_id = 2;
+}
+
+// RevokeApplicationResponse is empty on success; errors use gRPC status.
+message RevokeApplicationResponse {}
+
+// ListTenantApplicationsRequest identifies the tenant to query.
+message ListTenantApplicationsRequest {
+  string tenant_id = 1;
+}
+
+// ListTenantApplicationsResponse contains the authorized applications.
+message ListTenantApplicationsResponse {
+  repeated TenantApplication applications = 1;
+}
+
+// TenantApplication represents an application authorized for a tenant.
+message TenantApplication {
+  string application_id = 1;
+  string application_name = 2;
+  int64 authorized_at = 3; // Unix timestamp
+}
+
+// GrantUserAccessRequest grants a user access to the calling application.
+message GrantUserAccessRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+  repeated string roles = 3;  // Application-defined roles
+  repeated string scopes = 4; // Application-defined scopes
+  string acting_user_id = 5;
+}
+
+// GrantUserAccessResponse is empty on success; errors use gRPC status.
+message GrantUserAccessResponse {}
+
+// RevokeUserAccessRequest revokes a user's access to the calling application.
+message RevokeUserAccessRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+  string acting_user_id = 3;
+}
+
+// RevokeUserAccessResponse is empty on success; errors use gRPC status.
+message RevokeUserAccessResponse {}
+
+// UpdateUserAccessRequest updates a user's roles and scopes.
+message UpdateUserAccessRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+  repeated string roles = 3;  // Replaces existing roles
+  repeated string scopes = 4; // Replaces existing scopes
+  string acting_user_id = 5;
+}
+
+// UpdateUserAccessResponse is empty on success; errors use gRPC status.
+message UpdateUserAccessResponse {}
+
+// ListUserAccessRequest lists users with access in a tenant.
+message ListUserAccessRequest {
+  string tenant_id = 1;
+}
+
+// ListUserAccessResponse contains users with their roles and scopes.
+message ListUserAccessResponse {
+  repeated UserAccess users = 1;
+}
+
+// UserAccess represents a user's access to the calling application.
+message UserAccess {
+  string user_id = 1;
+  repeated string roles = 2;
+  repeated string scopes = 3;
+  int64 granted_at = 4; // Unix timestamp
+}

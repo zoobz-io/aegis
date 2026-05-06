@@ -63,6 +63,7 @@ message CreateTenantRequest {
   string name = 1;
   string slug = 2;
   string owner_user_id = 3;
+  string acting_user_id = 4; // Janus verifies this user has permission to create tenants
 }
 
 // CreateTenantResponse contains the created tenant ID.
@@ -75,6 +76,7 @@ message UpdateTenantRequest {
   string tenant_id = 1;
   string name = 2;
   string slug = 3;
+  string acting_user_id = 4; // Janus verifies this user is admin/owner in the tenant
 }
 
 // UpdateTenantResponse is empty on success; errors use gRPC status.
