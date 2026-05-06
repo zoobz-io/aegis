@@ -1,3 +1,5 @@
+//go:build testing
+
 package aegis
 
 import (
@@ -45,12 +47,12 @@ func TestFileKeychainLoadCertificate(t *testing.T) {
 	}
 }
 
-func TestFileKeychainLoadCAPool(t *testing.T) {
+func TestFileKeychainLoadTrustedCAs(t *testing.T) {
 	dir := t.TempDir()
 	writeTestCACert(t, dir)
 
 	kc := NewFileKeychain(dir)
-	pool, err := kc.LoadCAPool()
+	pool, err := kc.LoadTrustedCAs(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

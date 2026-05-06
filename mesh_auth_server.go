@@ -51,9 +51,21 @@ func (s *meshAuthService) ExchangeToken(ctx context.Context, req *TokenExchangeR
 }
 
 // RevokeToken revokes a token by certificate fingerprint.
+// Only self-revocation is permitted — the caller's certificate fingerprint
+// must match the requested fingerprint.
 func (s *meshAuthService) RevokeToken(ctx context.Context, req *RevokeTokenRequest) (*RevokeTokenResponse, error) {
 	if req.Fingerprint == "" {
 		return nil, status.Error(codes.InvalidArgument, "fingerprint is required")
+	}
+
+	caller, err := CallerFromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "failed to extract caller identity: %v", err)
+	}
+
+	callerFingerprint := sctx.GetFingerprint(caller.Certificate)
+	if req.Fingerprint != callerFingerprint {
+		return nil, status.Error(codes.PermissionDenied, "can only revoke own token")
 	}
 
 	if err := s.admin.RevokeByFingerprint(ctx, req.Fingerprint); err != nil {

@@ -14,6 +14,7 @@ import (
 type Keychain interface {
 	LoadPrivateKey(ctx context.Context, id string) (crypto.PrivateKey, error)
 	LoadCertificate(ctx context.Context, id string) (*x509.Certificate, error)
+	LoadTrustedCAs(ctx context.Context) (*x509.CertPool, error)
 }
 
 // FileKeychain loads keys and certificates from PEM files on disk.
@@ -29,7 +30,7 @@ func NewFileKeychain(dir string) *FileKeychain {
 
 // LoadPrivateKey loads a PEM-encoded private key from {dir}/{id}-key.pem.
 func (fk *FileKeychain) LoadPrivateKey(_ context.Context, id string) (crypto.PrivateKey, error) {
-	path := filepath.Join(fk.dir, fmt.Sprintf("%s-key.pem", id))
+	path := filepath.Join(fk.dir, fmt.Sprintf("%s-key.pem", filepath.Base(id)))
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read key file %s: %w", path, err)
@@ -63,7 +64,7 @@ func (fk *FileKeychain) LoadPrivateKey(_ context.Context, id string) (crypto.Pri
 
 // LoadCertificate loads a PEM-encoded certificate from {dir}/{id}-cert.pem.
 func (fk *FileKeychain) LoadCertificate(_ context.Context, id string) (*x509.Certificate, error) {
-	path := filepath.Join(fk.dir, fmt.Sprintf("%s-cert.pem", id))
+	path := filepath.Join(fk.dir, fmt.Sprintf("%s-cert.pem", filepath.Base(id)))
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cert file %s: %w", path, err)
@@ -82,8 +83,8 @@ func (fk *FileKeychain) LoadCertificate(_ context.Context, id string) (*x509.Cer
 	return cert, nil
 }
 
-// LoadCAPool loads a PEM-encoded CA certificate pool from {dir}/ca-cert.pem.
-func (fk *FileKeychain) LoadCAPool() (*x509.CertPool, error) {
+// LoadTrustedCAs loads a PEM-encoded CA certificate pool from {dir}/ca-cert.pem.
+func (fk *FileKeychain) LoadTrustedCAs(_ context.Context) (*x509.CertPool, error) {
 	path := filepath.Join(fk.dir, "ca-cert.pem")
 	data, err := os.ReadFile(path)
 	if err != nil {

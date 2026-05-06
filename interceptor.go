@@ -95,13 +95,21 @@ func (s *guardInterceptorState) validateRequest(ctx context.Context, method stri
 		return ctx, status.Errorf(codes.PermissionDenied, "guard validation failed: %v", err)
 	}
 
-	// Extract caller's fingerprint from the mTLS context to look up security context
-	caller, err := CallerFromContext(ctx)
-	if err == nil {
-		fingerprint := sctx.GetFingerprint(caller.Certificate)
-		if sc, ok := s.admin.GetContext(ctx, fingerprint); ok {
-			ctx = contextWithSecurityContext(ctx, sc)
+	// Inject SecurityContext when admin is available.
+	// If CallerFromContext fails after a successful guard validation, something is structurally wrong.
+	if s.admin != nil {
+		caller, err := CallerFromContext(ctx)
+		if err != nil {
+			return ctx, status.Errorf(codes.Internal, "guard passed but caller context unavailable: %v", err)
 		}
+
+		fingerprint := sctx.GetFingerprint(caller.Certificate)
+		sc, ok := s.admin.GetContext(ctx, fingerprint)
+		if !ok {
+			return ctx, status.Error(codes.Internal, "guard passed but security context not found")
+		}
+
+		ctx = contextWithSecurityContext(ctx, sc)
 	}
 
 	return ctx, nil

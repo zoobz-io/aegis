@@ -39,12 +39,7 @@ func NewAdminFromKeychain(ctx context.Context, keychain Keychain, id string) (sc
 		return nil, fmt.Errorf("failed to load private key: %w", err)
 	}
 
-	fk, ok := keychain.(*FileKeychain)
-	if !ok {
-		return nil, fmt.Errorf("keychain does not support CA pool loading")
-	}
-
-	caPool, err := fk.LoadCAPool()
+	caPool, err := keychain.LoadTrustedCAs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load CA pool: %w", err)
 	}
@@ -55,8 +50,9 @@ func NewAdminFromKeychain(ctx context.Context, keychain Keychain, id string) (sc
 // DefaultMeshPolicy returns a ContextPolicy that populates Metadata from certificate fields.
 // CN → NodeID, O (first) → ServiceName.
 func DefaultMeshPolicy() sctx.ContextPolicy[Metadata] {
+	basePolicy := sctx.DefaultContextPolicy[Metadata]()
 	return func(cert *x509.Certificate) (*sctx.Context[Metadata], error) {
-		base, err := sctx.DefaultContextPolicy[Metadata]()(cert)
+		base, err := basePolicy(cert)
 		if err != nil {
 			return nil, err
 		}

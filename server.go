@@ -45,9 +45,10 @@ func (ms *MeshServer) RegisterService(r ServiceRegistrar) {
 }
 
 // SetAuth configures auth for the server, enabling guard interceptors.
-func (ms *MeshServer) SetAuth(admin sctx.Admin[Metadata], guards *GuardRegistry) {
+func (ms *MeshServer) SetAuth(admin sctx.Admin[Metadata], guards *GuardRegistry, nodeToken sctx.SignedToken) {
 	ms.admin = admin
 	ms.guards = guards
+	ms.nodeToken = nodeToken
 }
 
 // Start starts the gRPC server.
