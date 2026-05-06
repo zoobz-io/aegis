@@ -4,6 +4,8 @@ package session.v1;
 
 option go_package = "github.com/zoobz-io/aegis/proto/session/v1";
 
+import "proto/common/v1/common.proto";
+
 // SessionService provides session lifecycle management.
 // Implemented by janus, consumed by services needing session operations.
 service SessionService {
@@ -50,6 +52,7 @@ message ValidateSessionResponse {
   bool valid = 1;
   string user_id = 2;
   int64 expires_at = 3; // Unix timestamp, 0 if invalid
+  repeated common.v1.AuthorizedTenant tenants = 4;
 }
 
 // RevokeSessionRequest identifies the session to revoke.

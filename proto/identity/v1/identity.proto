@@ -4,6 +4,8 @@ package identity.v1;
 
 option go_package = "github.com/zoobz-io/aegis/proto/identity/v1";
 
+import "proto/common/v1/common.proto";
+
 // IdentityService provides identity resolution and registration.
 // Implemented by janus, consumed by services needing user identity operations.
 service IdentityService {
@@ -29,6 +31,7 @@ message ResolveIdentityRequest {
 message ResolveIdentityResponse {
   string user_id = 1;
   bool created = 2; // True if a new user was created
+  repeated common.v1.AuthorizedTenant tenants = 3;
 }
 
 // RegisterRequest contains the information needed to create a user.

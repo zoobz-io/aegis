@@ -7,6 +7,7 @@
 package v1
 
 import (
+	v1 "github.com/zoobz-io/aegis/proto/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -79,6 +80,7 @@ type ResolveIdentityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Created       bool                   `protobuf:"varint,2,opt,name=created,proto3" json:"created,omitempty"` // True if a new user was created
+	Tenants       []*v1.AuthorizedTenant `protobuf:"bytes,3,rep,name=tenants,proto3" json:"tenants,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -125,6 +127,13 @@ func (x *ResolveIdentityResponse) GetCreated() bool {
 		return x.Created
 	}
 	return false
+}
+
+func (x *ResolveIdentityResponse) GetTenants() []*v1.AuthorizedTenant {
+	if x != nil {
+		return x.Tenants
+	}
+	return nil
 }
 
 // RegisterRequest contains the information needed to create a user.
@@ -429,13 +438,14 @@ var File_proto_identity_v1_identity_proto protoreflect.FileDescriptor
 
 const file_proto_identity_v1_identity_proto_rawDesc = "" +
 	"\n" +
-	" proto/identity/v1/identity.proto\x12\videntity.v1\"^\n" +
+	" proto/identity/v1/identity.proto\x12\videntity.v1\x1a\x1cproto/common/v1/common.proto\"^\n" +
 	"\x16ResolveIdentityRequest\x12\x1a\n" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\x12(\n" +
-	"\x10provider_user_id\x18\x02 \x01(\tR\x0eproviderUserId\"L\n" +
+	"\x10provider_user_id\x18\x02 \x01(\tR\x0eproviderUserId\"\x83\x01\n" +
 	"\x17ResolveIdentityResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x18\n" +
-	"\acreated\x18\x02 \x01(\bR\acreated\"\xe2\x01\n" +
+	"\acreated\x18\x02 \x01(\bR\acreated\x125\n" +
+	"\atenants\x18\x03 \x03(\v2\x1b.common.v1.AuthorizedTenantR\atenants\"\xe2\x01\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1d\n" +
@@ -484,20 +494,22 @@ var file_proto_identity_v1_identity_proto_goTypes = []any{
 	(*ListProvidersRequest)(nil),    // 4: identity.v1.ListProvidersRequest
 	(*ListProvidersResponse)(nil),   // 5: identity.v1.ListProvidersResponse
 	(*Provider)(nil),                // 6: identity.v1.Provider
+	(*v1.AuthorizedTenant)(nil),     // 7: common.v1.AuthorizedTenant
 }
 var file_proto_identity_v1_identity_proto_depIdxs = []int32{
-	6, // 0: identity.v1.ListProvidersResponse.providers:type_name -> identity.v1.Provider
-	0, // 1: identity.v1.IdentityService.ResolveIdentity:input_type -> identity.v1.ResolveIdentityRequest
-	2, // 2: identity.v1.IdentityService.Register:input_type -> identity.v1.RegisterRequest
-	4, // 3: identity.v1.IdentityService.ListProviders:input_type -> identity.v1.ListProvidersRequest
-	1, // 4: identity.v1.IdentityService.ResolveIdentity:output_type -> identity.v1.ResolveIdentityResponse
-	3, // 5: identity.v1.IdentityService.Register:output_type -> identity.v1.RegisterResponse
-	5, // 6: identity.v1.IdentityService.ListProviders:output_type -> identity.v1.ListProvidersResponse
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	7, // 0: identity.v1.ResolveIdentityResponse.tenants:type_name -> common.v1.AuthorizedTenant
+	6, // 1: identity.v1.ListProvidersResponse.providers:type_name -> identity.v1.Provider
+	0, // 2: identity.v1.IdentityService.ResolveIdentity:input_type -> identity.v1.ResolveIdentityRequest
+	2, // 3: identity.v1.IdentityService.Register:input_type -> identity.v1.RegisterRequest
+	4, // 4: identity.v1.IdentityService.ListProviders:input_type -> identity.v1.ListProvidersRequest
+	1, // 5: identity.v1.IdentityService.ResolveIdentity:output_type -> identity.v1.ResolveIdentityResponse
+	3, // 6: identity.v1.IdentityService.Register:output_type -> identity.v1.RegisterResponse
+	5, // 7: identity.v1.IdentityService.ListProviders:output_type -> identity.v1.ListProvidersResponse
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_identity_v1_identity_proto_init() }
