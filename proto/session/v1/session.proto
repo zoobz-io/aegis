@@ -1,28 +1,22 @@
 syntax = "proto3";
 
-package aegis.identity.v1;
+package session.v1;
 
-option go_package = "github.com/zoobz-io/aegis/proto/identity";
+option go_package = "github.com/zoobz-io/aegis/proto/session/v1";
 
-// IdentityService provides identity operations for mesh services.
-// Implemented by morpheus, consumed by other services requiring authentication.
-service IdentityService {
+// SessionService provides session lifecycle management.
+// Implemented by janus, consumed by services needing session operations.
+service SessionService {
+  // CreateSession issues a session token for a user.
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+
   // ValidateSession checks if a session token is valid and returns user info.
   rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
-
-  // GetUser retrieves a user by ID.
-  rpc GetUser(GetUserRequest) returns (GetUserResponse);
-
-  // GetUserByEmail retrieves a user by email address.
-  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserResponse);
-
-  // ListProviders returns the OAuth providers linked to a user.
-  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
 
   // RevokeSession revokes a specific session by token.
   rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
 
-  // RevokeUserSessions revokes all sessions for a user ("logout everywhere").
+  // RevokeUserSessions revokes all sessions for a user.
   rpc RevokeUserSessions(RevokeUserSessionsRequest) returns (RevokeUserSessionsResponse);
 
   // ListUserSessions lists active sessions for a user.
@@ -31,6 +25,19 @@ service IdentityService {
   // SubscribeSessionEvents streams session lifecycle events.
   // Enables real-time cache invalidation without polling.
   rpc SubscribeSessionEvents(SubscribeSessionEventsRequest) returns (stream SessionEvent);
+}
+
+// CreateSessionRequest contains the information needed to create a session.
+message CreateSessionRequest {
+  string user_id = 1;
+  string user_agent = 2;
+  string ip_address = 3;
+}
+
+// CreateSessionResponse contains the issued session token.
+message CreateSessionResponse {
+  string token = 1;
+  int64 expires_at = 2; // Unix timestamp
 }
 
 // ValidateSessionRequest contains the session token to validate.
@@ -42,45 +49,7 @@ message ValidateSessionRequest {
 message ValidateSessionResponse {
   bool valid = 1;
   string user_id = 2;
-  int64 expires_at = 3;  // Unix timestamp, 0 if invalid
-}
-
-// GetUserRequest identifies a user by ID.
-message GetUserRequest {
-  string user_id = 1;
-}
-
-// GetUserByEmailRequest identifies a user by email.
-message GetUserByEmailRequest {
-  string email = 1;
-}
-
-// GetUserResponse contains user information.
-// Email is not masked in mesh responses - masking is a boundary concern.
-message GetUserResponse {
-  string id = 1;
-  string email = 2;
-  string name = 3;
-  string avatar_url = 4;
-  bool email_verified = 5;
-  int64 created_at = 6;  // Unix timestamp
-}
-
-// ListProvidersRequest identifies the user whose providers to list.
-message ListProvidersRequest {
-  string user_id = 1;
-}
-
-// ListProvidersResponse contains the user's linked OAuth providers.
-message ListProvidersResponse {
-  repeated Provider providers = 1;
-}
-
-// Provider represents a linked OAuth provider.
-message Provider {
-  string type = 1;             // "github" or "google"
-  string provider_user_id = 2; // External provider's user ID
-  int64 linked_at = 3;         // Unix timestamp
+  int64 expires_at = 3; // Unix timestamp, 0 if invalid
 }
 
 // RevokeSessionRequest identifies the session to revoke.
@@ -113,23 +82,22 @@ message ListUserSessionsResponse {
 
 // SessionInfo contains information about an active session.
 message SessionInfo {
-  string token_prefix = 1;  // First N chars for identification, not full token
-  int64 created_at = 2;     // Unix timestamp
-  int64 expires_at = 3;     // Unix timestamp
-  string user_agent = 4;    // Device/browser info
-  string ip_address = 5;    // Last known IP
+  string token_prefix = 1; // First N chars for identification, not full token
+  int64 created_at = 2;    // Unix timestamp
+  int64 expires_at = 3;    // Unix timestamp
+  string user_agent = 4;
+  string ip_address = 5;
 }
 
 // SubscribeSessionEventsRequest configures the event subscription.
-// Empty for now; filters (user_id, event types) may be added later.
 message SubscribeSessionEventsRequest {}
 
 // SessionEvent represents a session lifecycle event.
 message SessionEvent {
   SessionEventType type = 1;
-  string token_prefix = 2;  // First N chars for identification, not full token
+  string token_prefix = 2; // First N chars for identification, not full token
   string user_id = 3;
-  int64 timestamp = 4;      // Unix timestamp when event occurred
+  int64 timestamp = 4;     // Unix timestamp
 }
 
 // SessionEventType identifies the kind of session lifecycle event.
