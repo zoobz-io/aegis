@@ -7,6 +7,7 @@
 package v1
 
 import (
+	v1 "github.com/zoobz-io/aegis/proto/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -239,6 +240,7 @@ type ValidateSessionResponse struct {
 	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
 	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ExpiresAt     int64                  `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // Unix timestamp, 0 if invalid
+	Tenants       []*v1.AuthorizedTenant `protobuf:"bytes,4,rep,name=tenants,proto3" json:"tenants,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -292,6 +294,13 @@ func (x *ValidateSessionResponse) GetExpiresAt() int64 {
 		return x.ExpiresAt
 	}
 	return 0
+}
+
+func (x *ValidateSessionResponse) GetTenants() []*v1.AuthorizedTenant {
+	if x != nil {
+		return x.Tenants
+	}
+	return nil
 }
 
 // RevokeSessionRequest identifies the session to revoke.
@@ -744,7 +753,7 @@ var File_proto_session_v1_session_proto protoreflect.FileDescriptor
 const file_proto_session_v1_session_proto_rawDesc = "" +
 	"\n" +
 	"\x1eproto/session/v1/session.proto\x12\n" +
-	"session.v1\"m\n" +
+	"session.v1\x1a\x1cproto/common/v1/common.proto\"m\n" +
 	"\x14CreateSessionRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
 	"\n" +
@@ -756,12 +765,13 @@ const file_proto_session_v1_session_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x02 \x01(\x03R\texpiresAt\".\n" +
 	"\x16ValidateSessionRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"g\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\x9e\x01\n" +
 	"\x17ValidateSessionResponse\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1d\n" +
 	"\n" +
-	"expires_at\x18\x03 \x01(\x03R\texpiresAt\",\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt\x125\n" +
+	"\atenants\x18\x04 \x03(\v2\x1b.common.v1.AuthorizedTenantR\atenants\",\n" +
 	"\x14RevokeSessionRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\x17\n" +
 	"\x15RevokeSessionResponse\"4\n" +
@@ -831,27 +841,29 @@ var file_proto_session_v1_session_proto_goTypes = []any{
 	(*SessionInfo)(nil),                   // 11: session.v1.SessionInfo
 	(*SubscribeSessionEventsRequest)(nil), // 12: session.v1.SubscribeSessionEventsRequest
 	(*SessionEvent)(nil),                  // 13: session.v1.SessionEvent
+	(*v1.AuthorizedTenant)(nil),           // 14: common.v1.AuthorizedTenant
 }
 var file_proto_session_v1_session_proto_depIdxs = []int32{
-	11, // 0: session.v1.ListUserSessionsResponse.sessions:type_name -> session.v1.SessionInfo
-	0,  // 1: session.v1.SessionEvent.type:type_name -> session.v1.SessionEventType
-	1,  // 2: session.v1.SessionService.CreateSession:input_type -> session.v1.CreateSessionRequest
-	3,  // 3: session.v1.SessionService.ValidateSession:input_type -> session.v1.ValidateSessionRequest
-	5,  // 4: session.v1.SessionService.RevokeSession:input_type -> session.v1.RevokeSessionRequest
-	7,  // 5: session.v1.SessionService.RevokeUserSessions:input_type -> session.v1.RevokeUserSessionsRequest
-	9,  // 6: session.v1.SessionService.ListUserSessions:input_type -> session.v1.ListUserSessionsRequest
-	12, // 7: session.v1.SessionService.SubscribeSessionEvents:input_type -> session.v1.SubscribeSessionEventsRequest
-	2,  // 8: session.v1.SessionService.CreateSession:output_type -> session.v1.CreateSessionResponse
-	4,  // 9: session.v1.SessionService.ValidateSession:output_type -> session.v1.ValidateSessionResponse
-	6,  // 10: session.v1.SessionService.RevokeSession:output_type -> session.v1.RevokeSessionResponse
-	8,  // 11: session.v1.SessionService.RevokeUserSessions:output_type -> session.v1.RevokeUserSessionsResponse
-	10, // 12: session.v1.SessionService.ListUserSessions:output_type -> session.v1.ListUserSessionsResponse
-	13, // 13: session.v1.SessionService.SubscribeSessionEvents:output_type -> session.v1.SessionEvent
-	8,  // [8:14] is the sub-list for method output_type
-	2,  // [2:8] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	14, // 0: session.v1.ValidateSessionResponse.tenants:type_name -> common.v1.AuthorizedTenant
+	11, // 1: session.v1.ListUserSessionsResponse.sessions:type_name -> session.v1.SessionInfo
+	0,  // 2: session.v1.SessionEvent.type:type_name -> session.v1.SessionEventType
+	1,  // 3: session.v1.SessionService.CreateSession:input_type -> session.v1.CreateSessionRequest
+	3,  // 4: session.v1.SessionService.ValidateSession:input_type -> session.v1.ValidateSessionRequest
+	5,  // 5: session.v1.SessionService.RevokeSession:input_type -> session.v1.RevokeSessionRequest
+	7,  // 6: session.v1.SessionService.RevokeUserSessions:input_type -> session.v1.RevokeUserSessionsRequest
+	9,  // 7: session.v1.SessionService.ListUserSessions:input_type -> session.v1.ListUserSessionsRequest
+	12, // 8: session.v1.SessionService.SubscribeSessionEvents:input_type -> session.v1.SubscribeSessionEventsRequest
+	2,  // 9: session.v1.SessionService.CreateSession:output_type -> session.v1.CreateSessionResponse
+	4,  // 10: session.v1.SessionService.ValidateSession:output_type -> session.v1.ValidateSessionResponse
+	6,  // 11: session.v1.SessionService.RevokeSession:output_type -> session.v1.RevokeSessionResponse
+	8,  // 12: session.v1.SessionService.RevokeUserSessions:output_type -> session.v1.RevokeUserSessionsResponse
+	10, // 13: session.v1.SessionService.ListUserSessions:output_type -> session.v1.ListUserSessionsResponse
+	13, // 14: session.v1.SessionService.SubscribeSessionEvents:output_type -> session.v1.SessionEvent
+	9,  // [9:15] is the sub-list for method output_type
+	3,  // [3:9] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_session_v1_session_proto_init() }

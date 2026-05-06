@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/zoobz-io/aegis/proto/common/v1";
+
+// AuthorizedTenant represents a tenant the user is authorized through
+// for the calling application. Returned by identity and session services
+// so callers can scope business logic without extra round-trips.
+message AuthorizedTenant {
+  string tenant_id = 1;
+  string tenant_name = 2;
+  string role = 3; // viewer, editor, admin, owner
+}
