@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const tokenMetadataKey = "x-aegis-token"
+const tokenMetadataKey = "x-aegis-token" //nolint:gosec // metadata key name, not a credential
 
 // GuardRegistry maps gRPC method names to guards.
 type GuardRegistry struct {

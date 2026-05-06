@@ -181,7 +181,7 @@ func (p *ServiceClientPool) exchangeToken(ctx context.Context, address string, t
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect for token exchange: %w", err)
 	}
-	defer tmpConn.Close()
+	defer func() { _ = tmpConn.Close() }()
 
 	// Get the node's TLS cert and private key for the assertion
 	cert, err := x509.ParseCertificate(p.node.TLSConfig.Certificate.Certificate[0])

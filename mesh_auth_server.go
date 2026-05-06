@@ -29,8 +29,8 @@ func (s *meshAuthService) ExchangeToken(ctx context.Context, req *TokenExchangeR
 	}
 
 	var assertion sctx.SignedAssertion
-	if err := json.Unmarshal(req.Assertion, &assertion); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to decode assertion: %v", err)
+	if unmarshalErr := json.Unmarshal(req.Assertion, &assertion); unmarshalErr != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to decode assertion: %v", unmarshalErr)
 	}
 
 	token, err := s.admin.Generate(ctx, caller.Certificate, assertion)
