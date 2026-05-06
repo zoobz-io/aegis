@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/zoobz-io/sctx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -21,6 +22,9 @@ type MeshServer struct {
 	listener   net.Listener
 	tlsConfig  *TLSConfig
 	registrars []ServiceRegistrar
+	admin      sctx.Admin[Metadata]
+	guards     *GuardRegistry
+	nodeToken  sctx.SignedToken
 }
 
 // NewMeshServer creates a new mesh server for the node.
@@ -38,6 +42,13 @@ func (ms *MeshServer) SetTLSConfig(tlsConfig *TLSConfig) {
 // RegisterService adds a service registrar to be called when the server starts.
 func (ms *MeshServer) RegisterService(r ServiceRegistrar) {
 	ms.registrars = append(ms.registrars, r)
+}
+
+// SetAuth configures auth for the server, enabling guard interceptors.
+func (ms *MeshServer) SetAuth(admin sctx.Admin[Metadata], guards *GuardRegistry, nodeToken sctx.SignedToken) {
+	ms.admin = admin
+	ms.guards = guards
+	ms.nodeToken = nodeToken
 }
 
 // Start starts the gRPC server.
@@ -60,6 +71,13 @@ func (ms *MeshServer) Start() error {
 
 	creds := credentials.NewTLS(ms.tlsConfig.GetServerTLSConfig())
 	opts := []grpc.ServerOption{grpc.Creds(creds)}
+
+	if ms.admin != nil && ms.guards != nil {
+		opts = append(opts,
+			grpc.ChainUnaryInterceptor(UnaryGuardInterceptor(ms.guards, ms.admin, ms.nodeToken)),
+			grpc.ChainStreamInterceptor(StreamGuardInterceptor(ms.guards, ms.admin, ms.nodeToken)),
+		)
+	}
 
 	ms.server = grpc.NewServer(opts...)
 	RegisterMeshServiceServer(ms.server, ms)

@@ -1,7 +1,11 @@
 package aegis
 
 import (
+	"context"
+	"crypto/x509"
 	"fmt"
+
+	"github.com/zoobz-io/sctx"
 )
 
 // NodeBuilder provides a fluent interface for creating nodes with required TLS.
@@ -14,6 +18,9 @@ type NodeBuilder struct {
 	registrars   []ServiceRegistrar
 	certDir      string
 	tlsOptions   *TLSOptions
+	keychain     Keychain
+	admin        sctx.Admin[Metadata]
+	guards       map[string]sctx.Guard
 }
 
 // NewNodeBuilder creates a new node builder.
@@ -72,6 +79,27 @@ func (nb *NodeBuilder) WithTLSOptions(opts *TLSOptions) *NodeBuilder {
 	return nb
 }
 
+// WithKeychain sets the keychain for loading signing keys.
+func (nb *NodeBuilder) WithKeychain(keychain Keychain) *NodeBuilder {
+	nb.keychain = keychain
+	return nb
+}
+
+// WithAdmin sets a pre-built Admin for the node.
+func (nb *NodeBuilder) WithAdmin(admin sctx.Admin[Metadata]) *NodeBuilder {
+	nb.admin = admin
+	return nb
+}
+
+// WithGuard registers a guard for a gRPC method.
+func (nb *NodeBuilder) WithGuard(method string, guard sctx.Guard) *NodeBuilder {
+	if nb.guards == nil {
+		nb.guards = make(map[string]sctx.Guard)
+	}
+	nb.guards[method] = guard
+	return nb
+}
+
 // Build creates the node with TLS enabled.
 func (nb *NodeBuilder) Build() (*Node, error) {
 	if nb.id == "" {
@@ -120,12 +148,70 @@ func (nb *NodeBuilder) Build() (*Node, error) {
 	node.MeshServer.SetTLSConfig(tlsConfig)
 	node.PeerManager.SetTLSConfig(tlsConfig)
 
+	// Set up auth if keychain or admin is provided
+	if nb.admin != nil {
+		node.Admin = nb.admin
+	} else if nb.keychain != nil {
+		admin, err := NewAdminFromKeychain(context.Background(), nb.keychain, nb.id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create admin from keychain: %w", err)
+		}
+		node.Admin = admin
+	}
+
+	// Set up guards (preserve any pre-existing guards on the node)
+	if node.Guards == nil {
+		node.Guards = NewGuardRegistry()
+	}
+	for method, guard := range nb.guards {
+		node.Guards.Register(method, guard)
+	}
+
+	// Generate node token and register MeshAuth service if admin is available
+	if node.Admin != nil {
+		nodeToken, err := generateNodeToken(node)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate node token: %w", err)
+		}
+		node.nodeToken = nodeToken
+		node.MeshServer.RegisterService(MeshAuthRegistrar(node.Admin))
+		node.MeshServer.SetAuth(node.Admin, node.Guards, nodeToken)
+	}
+
 	// Register service registrars
 	for _, r := range nb.registrars {
 		node.MeshServer.RegisterService(r)
 	}
 
 	return node, nil
+}
+
+// generateNodeToken creates a self-token for the node by generating an assertion
+// against its own TLS certificate and exchanging it with the local admin.
+func generateNodeToken(node *Node) (sctx.SignedToken, error) {
+	if node.TLSConfig == nil {
+		return "", fmt.Errorf("TLS config required for node token generation")
+	}
+	if node.Admin == nil {
+		return "", fmt.Errorf("admin required for node token generation")
+	}
+
+	cert, err := x509.ParseCertificate(node.TLSConfig.Certificate.Certificate[0])
+	if err != nil {
+		return "", fmt.Errorf("failed to parse node certificate: %w", err)
+	}
+
+	assertion, err := sctx.CreateAssertion(node.TLSConfig.Certificate.PrivateKey, cert)
+	if err != nil {
+		return "", fmt.Errorf("failed to create node assertion: %w", err)
+	}
+
+	token, err := node.Admin.Generate(context.Background(), cert, assertion)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate node token: %w", err)
+	}
+
+	return token, nil
 }
 
 // NewSecureNode is a convenience function that creates a node with TLS enabled.
