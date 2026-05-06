@@ -28,7 +28,9 @@ type AuthorizedTenant struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	TenantName    string                 `protobuf:"bytes,2,opt,name=tenant_name,json=tenantName,proto3" json:"tenant_name,omitempty"`
-	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"` // viewer, editor, admin, owner
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`                            // janus membership role: viewer, editor, admin, owner
+	AppRoles      []string               `protobuf:"bytes,4,rep,name=app_roles,json=appRoles,proto3" json:"app_roles,omitempty"`    // application-defined roles, e.g. ["nexus:editor"]
+	AppScopes     []string               `protobuf:"bytes,5,rep,name=app_scopes,json=appScopes,proto3" json:"app_scopes,omitempty"` // application-defined scopes, e.g. ["projects:read", "builds:write"]
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -84,16 +86,33 @@ func (x *AuthorizedTenant) GetRole() string {
 	return ""
 }
 
+func (x *AuthorizedTenant) GetAppRoles() []string {
+	if x != nil {
+		return x.AppRoles
+	}
+	return nil
+}
+
+func (x *AuthorizedTenant) GetAppScopes() []string {
+	if x != nil {
+		return x.AppScopes
+	}
+	return nil
+}
+
 var File_proto_common_v1_common_proto protoreflect.FileDescriptor
 
 const file_proto_common_v1_common_proto_rawDesc = "" +
 	"\n" +
-	"\x1cproto/common/v1/common.proto\x12\tcommon.v1\"d\n" +
+	"\x1cproto/common/v1/common.proto\x12\tcommon.v1\"\xa0\x01\n" +
 	"\x10AuthorizedTenant\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1f\n" +
 	"\vtenant_name\x18\x02 \x01(\tR\n" +
 	"tenantName\x12\x12\n" +
-	"\x04role\x18\x03 \x01(\tR\x04roleB+Z)github.com/zoobz-io/aegis/proto/common/v1b\x06proto3"
+	"\x04role\x18\x03 \x01(\tR\x04role\x12\x1b\n" +
+	"\tapp_roles\x18\x04 \x03(\tR\bappRoles\x12\x1d\n" +
+	"\n" +
+	"app_scopes\x18\x05 \x03(\tR\tappScopesB+Z)github.com/zoobz-io/aegis/proto/common/v1b\x06proto3"
 
 var (
 	file_proto_common_v1_common_proto_rawDescOnce sync.Once

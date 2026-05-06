@@ -10,5 +10,7 @@ option go_package = "github.com/zoobz-io/aegis/proto/common/v1";
 message AuthorizedTenant {
   string tenant_id = 1;
   string tenant_name = 2;
-  string role = 3; // viewer, editor, admin, owner
+  string role = 3;                    // janus membership role: viewer, editor, admin, owner
+  repeated string app_roles = 4;     // application-defined roles, e.g. ["nexus:editor"]
+  repeated string app_scopes = 5;    // application-defined scopes, e.g. ["projects:read", "builds:write"]
 }

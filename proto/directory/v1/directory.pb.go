@@ -325,6 +325,7 @@ type CreateTenantRequest struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Slug          string                 `protobuf:"bytes,2,opt,name=slug,proto3" json:"slug,omitempty"`
 	OwnerUserId   string                 `protobuf:"bytes,3,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
+	ActingUserId  string                 `protobuf:"bytes,4,opt,name=acting_user_id,json=actingUserId,proto3" json:"acting_user_id,omitempty"` // Janus verifies this user has permission to create tenants
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -380,6 +381,13 @@ func (x *CreateTenantRequest) GetOwnerUserId() string {
 	return ""
 }
 
+func (x *CreateTenantRequest) GetActingUserId() string {
+	if x != nil {
+		return x.ActingUserId
+	}
+	return ""
+}
+
 // CreateTenantResponse contains the created tenant ID.
 type CreateTenantResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -431,6 +439,7 @@ type UpdateTenantRequest struct {
 	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Slug          string                 `protobuf:"bytes,3,opt,name=slug,proto3" json:"slug,omitempty"`
+	ActingUserId  string                 `protobuf:"bytes,4,opt,name=acting_user_id,json=actingUserId,proto3" json:"acting_user_id,omitempty"` // Janus verifies this user is admin/owner in the tenant
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -482,6 +491,13 @@ func (x *UpdateTenantRequest) GetName() string {
 func (x *UpdateTenantRequest) GetSlug() string {
 	if x != nil {
 		return x.Slug
+	}
+	return ""
+}
+
+func (x *UpdateTenantRequest) GetActingUserId() string {
+	if x != nil {
+		return x.ActingUserId
 	}
 	return ""
 }
@@ -550,17 +566,19 @@ const file_proto_directory_v1_directory_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\x03R\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x05 \x01(\x03R\tupdatedAt\"a\n" +
+	"updated_at\x18\x05 \x01(\x03R\tupdatedAt\"\x87\x01\n" +
 	"\x13CreateTenantRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\"\n" +
-	"\rowner_user_id\x18\x03 \x01(\tR\vownerUserId\"3\n" +
+	"\rowner_user_id\x18\x03 \x01(\tR\vownerUserId\x12$\n" +
+	"\x0eacting_user_id\x18\x04 \x01(\tR\factingUserId\"3\n" +
 	"\x14CreateTenantResponse\x12\x1b\n" +
-	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"Z\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"\x80\x01\n" +
 	"\x13UpdateTenantRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04slug\x18\x03 \x01(\tR\x04slug\"\x16\n" +
+	"\x04slug\x18\x03 \x01(\tR\x04slug\x12$\n" +
+	"\x0eacting_user_id\x18\x04 \x01(\tR\factingUserId\"\x16\n" +
 	"\x14UpdateTenantResponse2\xac\x03\n" +
 	"\x10DirectoryService\x12F\n" +
 	"\aGetUser\x12\x1c.directory.v1.GetUserRequest\x1a\x1d.directory.v1.GetUserResponse\x12T\n" +
