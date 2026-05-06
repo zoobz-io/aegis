@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package identity.v1;
+
+option go_package = "github.com/zoobz-io/aegis/proto/identity/v1";
+
+// IdentityService provides identity resolution and registration.
+// Implemented by janus, consumed by services needing user identity operations.
+service IdentityService {
+  // ResolveIdentity looks up an internal user by external IdP provider and subject.
+  // Returns the user ID if found, or creates a new user if not.
+  rpc ResolveIdentity(ResolveIdentityRequest) returns (ResolveIdentityResponse);
+
+  // Register creates a user, links an external identity, and optionally
+  // creates a tenant with owner membership.
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // ListProviders returns the external OAuth providers linked to a user.
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+}
+
+// ResolveIdentityRequest identifies the external identity to resolve.
+message ResolveIdentityRequest {
+  string provider = 1;         // e.g. "github", "google"
+  string provider_user_id = 2; // External provider's user ID
+}
+
+// ResolveIdentityResponse contains the resolved internal user.
+message ResolveIdentityResponse {
+  string user_id = 1;
+  bool created = 2; // True if a new user was created
+}
+
+// RegisterRequest contains the information needed to create a user.
+message RegisterRequest {
+  string email = 1;
+  string name = 2;
+  string avatar_url = 3;
+  string provider = 4;         // e.g. "github", "google"
+  string provider_user_id = 5;
+  // Optional: create a tenant and assign the user as owner.
+  string tenant_name = 6;
+  string tenant_slug = 7;
+}
+
+// RegisterResponse contains the created user and optional tenant.
+message RegisterResponse {
+  string user_id = 1;
+  string tenant_id = 2; // Empty if no tenant was requested
+}
+
+// ListProvidersRequest identifies the user whose providers to list.
+message ListProvidersRequest {
+  string user_id = 1;
+}
+
+// ListProvidersResponse contains the user's linked OAuth providers.
+message ListProvidersResponse {
+  repeated Provider providers = 1;
+}
+
+// Provider represents a linked external OAuth provider.
+message Provider {
+  string provider = 1;         // e.g. "github", "google"
+  string provider_user_id = 2;
+  int64 linked_at = 3;         // Unix timestamp
+}

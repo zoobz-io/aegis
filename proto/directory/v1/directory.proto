@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package directory.v1;
+
+option go_package = "github.com/zoobz-io/aegis/proto/directory/v1";
+
+// DirectoryService provides user and tenant lookups and management.
+// Implemented by janus, consumed by services needing user/tenant data.
+service DirectoryService {
+  // GetUser retrieves a user by ID.
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+
+  // GetUserByEmail retrieves a user by email address.
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserResponse);
+
+  // GetTenant retrieves a tenant by ID.
+  rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+
+  // CreateTenant creates a new tenant with an owner.
+  rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
+
+  // UpdateTenant updates tenant details.
+  rpc UpdateTenant(UpdateTenantRequest) returns (UpdateTenantResponse);
+}
+
+// GetUserRequest identifies a user by ID.
+message GetUserRequest {
+  string user_id = 1;
+}
+
+// GetUserByEmailRequest identifies a user by email.
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+// GetUserResponse contains user information.
+// Email is not masked — masking is a boundary concern handled by the consuming service.
+message GetUserResponse {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string avatar_url = 4;
+  bool email_verified = 5;
+  int64 created_at = 6; // Unix timestamp
+}
+
+// GetTenantRequest identifies a tenant by ID.
+message GetTenantRequest {
+  string tenant_id = 1;
+}
+
+// GetTenantResponse contains tenant information.
+message GetTenantResponse {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  int64 created_at = 4; // Unix timestamp
+  int64 updated_at = 5; // Unix timestamp
+}
+
+// CreateTenantRequest contains the information needed to create a tenant.
+message CreateTenantRequest {
+  string name = 1;
+  string slug = 2;
+  string owner_user_id = 3;
+}
+
+// CreateTenantResponse contains the created tenant ID.
+message CreateTenantResponse {
+  string tenant_id = 1;
+}
+
+// UpdateTenantRequest contains the fields to update on a tenant.
+message UpdateTenantRequest {
+  string tenant_id = 1;
+  string name = 2;
+  string slug = 3;
+}
+
+// UpdateTenantResponse is empty on success; errors use gRPC status.
+message UpdateTenantResponse {}
