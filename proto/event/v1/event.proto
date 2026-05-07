@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package event.v1;
+
+option go_package = "github.com/zoobz-io/aegis/proto/event/v1";
+
+// EventService provides cross-service domain event communication.
+// Implemented by clio (event sink), consumed by any mesh service emitting audit events.
+// Caller identity is derived from the mTLS certificate — the source field is set
+// server-side from the caller's cert CN and never trusted from the request.
+service EventService {
+  // Emit records a single domain event.
+  rpc Emit(EmitRequest) returns (EmitResponse);
+
+  // EmitBatch records multiple domain events atomically.
+  rpc EmitBatch(EmitBatchRequest) returns (EmitBatchResponse);
+
+  // Query retrieves tenant-scoped event history with filtering.
+  rpc Query(QueryEventsRequest) returns (QueryEventsResponse);
+
+  // Subscribe opens a server stream of events matching envelope-level filters.
+  rpc Subscribe(SubscribeEventsRequest) returns (stream DomainEvent);
+}
+
+// DomainEvent represents a structured domain event.
+// Three-tier queryability:
+//   - Envelope fields (always indexed): action, resource_type, resource_id, tenant_id, actor_id, source
+//   - Attributes (app-defined indexed k/v): flat string pairs for common filter patterns
+//   - Metadata (stored, not queryable): full typed payload as bytes
+message DomainEvent {
+  string id = 1;                        // Assigned by server if empty
+  string action = 2;                    // e.g. "user.created", "document.ingested"
+  string resource_type = 3;             // e.g. "user", "document"
+  string resource_id = 4;               // UUID of affected resource
+  string tenant_id = 5;                 // Required — partition key
+  string actor_id = 6;                  // User who caused the event (optional for system events)
+  string message = 7;                   // Human-readable description
+  map<string, string> attributes = 8;   // Indexed key-value pairs (app-defined, queryable)
+  bytes metadata = 9;                   // Full typed payload (JSON, stored but not queryable)
+  int64 occurred_at = 10;               // Unix nanos — when it happened in the source app
+  string source = 11;                   // Set by server from caller cert CN (read-only)
+}
+
+// EmitRequest contains a single domain event to record.
+message EmitRequest {
+  DomainEvent event = 1;
+}
+
+// EmitResponse contains the server-assigned event ID.
+message EmitResponse {
+  string id = 1;
+}
+
+// EmitBatchRequest contains multiple domain events to record atomically.
+message EmitBatchRequest {
+  repeated DomainEvent events = 1;
+}
+
+// EmitBatchResponse contains the server-assigned event IDs.
+message EmitBatchResponse {
+  repeated string ids = 1;
+}
+
+// QueryEventsRequest retrieves tenant-scoped event history with filtering.
+message QueryEventsRequest {
+  string tenant_id = 1;
+  string action = 2;
+  string resource_type = 3;
+  string resource_id = 4;
+  string actor_id = 5;
+  string source = 6;
+  int64 from = 7;                          // Unix nanos
+  int64 to = 8;                            // Unix nanos
+  map<string, string> attribute_filters = 9;
+  int32 offset = 10;
+  int32 limit = 11;
+}
+
+// QueryEventsResponse contains the matching events and total count.
+message QueryEventsResponse {
+  repeated DomainEvent events = 1;
+  int64 total = 2;
+}
+
+// SubscribeEventsRequest opens a live stream of events matching envelope-level filters.
+// Attribute filtering is not supported on live streams — filter client-side if needed.
+message SubscribeEventsRequest {
+  string tenant_id = 1;
+  string action_prefix = 2;  // e.g. "user." matches "user.created", "user.updated"
+  string resource_type = 3;
+  string source = 4;
+}
